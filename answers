@@ -1,0 +1,425 @@
+# Data Engineer Challenge : Answers
+
+All queries are in `queries.sql`. I loaded the three CSVs 1:1 into tables (`results`, `goalscorers`, `shootouts`) and ran them on SQLite. The SQL is ANSI-style, so it ports to Postgres or SQL Server with small changes.
+
+## Approach
+1. **Profile first. (Agile Thinking)** I checked row counts (results 45,315 · goalscorers 43,189 · shootouts 562), date range (1872-11-30 → 2023-11-21), NULL/'NA' values, and whether rows join across files.
+2. **Find the issue.** None of the files has an ID. `(date, home_team, away_team)` is present in all three, so I tested it as the match key.
+3. **Write and check each query. (Over-Checking)** I sanity-checked every result (totals, orphans, duplicates).
+
+---
+
+## 1. Average goals range per game, 1900–2000
+
+```sql
+-- 1. Average number of goals per game between 1900 and 2000
+--    Interpretation: matches from 1900-01-01 to 2000-12-31 inclusive.
+
+SELECT
+    COUNT(*) AS games,
+    SUM(CAST(home_score AS INTEGER) + CAST(away_score AS INTEGER)) AS total_goals,
+    ROUND(AVG(CAST(home_score AS INTEGER) + CAST(away_score AS INTEGER)), 2)
+                                                                  AS avg_goals_per_game
+FROM results
+WHERE date BETWEEN '1900-01-01' AND '2000-12-31';
+```
+
+**Result:** 23,712 games · 72,806 goals · **3.07 goals per game**
+
+*Assumption:* 1900-01-01 to 2000-12-31 inclusive. Changing the end date to `< '2000-01-01'` excludes the year 2000.
+
+---
+
+## 2. Shootout wins by country (alphabetical)
+
+```sql
+
+SELECT
+    winner   AS country,
+    COUNT(*) AS shootout_wins
+FROM shootouts
+GROUP BY winner
+ORDER BY winner;
+```
+
+**Result:** 163 countries, 562 shootouts.
+
+| Country | Wins |
+|---|---|
+| Abkhazia | 2 |
+| Algeria | 7 |
+| Angola | 7 |
+| Antigua and Barbuda | 2 |
+| Argentina | 14 |
+| Aruba | 1 |
+| Australia | 5 |
+| Bahrain | 3 |
+| Bangladesh | 1 |
+| Barbados | 1 |
+| Basque Country | 1 |
+| Belarus | 1 |
+| Belgium | 2 |
+| Benin | 3 |
+| Bolivia | 1 |
+| Bosnia and Herzegovina | 1 |
+| Botswana | 8 |
+| Brazil | 9 |
+| British Virgin Islands | 1 |
+| Bulgaria | 1 |
+| Burkina Faso | 6 |
+| Cameroon | 9 |
+| Canada | 2 |
+| Cape Verde | 1 |
+| Central African Republic | 1 |
+| Chad | 3 |
+| Chile | 5 |
+| China PR | 4 |
+| Colombia | 7 |
+| Costa Rica | 2 |
+| County of Nice | 1 |
+| Croatia | 6 |
+| Cuba | 1 |
+| Cyprus | 2 |
+| Czech Republic | 1 |
+| Czechoslovakia | 3 |
+| DR Congo | 4 |
+| Denmark | 2 |
+| Ecuador | 2 |
+| Egypt | 13 |
+| Ellan Vannin | 2 |
+| England | 3 |
+| Equatorial Guinea | 1 |
+| Eswatini | 5 |
+| Ethiopia | 7 |
+| Fiji | 1 |
+| Finland | 2 |
+| France | 4 |
+| Gabon | 4 |
+| Gambia | 3 |
+| Germany | 6 |
+| Ghana | 5 |
+| Greenland | 2 |
+| Guadeloupe | 2 |
+| Guatemala | 3 |
+| Guernsey | 1 |
+| Guinea | 8 |
+| Guyana | 1 |
+| Haiti | 1 |
+| Honduras | 4 |
+| Hong Kong | 1 |
+| Hungary | 1 |
+| Iceland | 2 |
+| India | 3 |
+| Indonesia | 4 |
+| Iran | 7 |
+| Iraq | 11 |
+| Iraqi Kurdistan | 1 |
+| Israel | 1 |
+| Italy | 7 |
+| Ivory Coast | 8 |
+| Jamaica | 1 |
+| Japan | 5 |
+| Kabylia | 1 |
+| Kazakhstan | 3 |
+| Kenya | 10 |
+| Kuwait | 2 |
+| Kárpátalja | 2 |
+| Latvia | 4 |
+| Lesotho | 6 |
+| Libya | 1 |
+| Madagascar | 2 |
+| Malawi | 3 |
+| Malaysia | 3 |
+| Mali | 7 |
+| Martinique | 5 |
+| Mauritius | 2 |
+| Menorca | 1 |
+| Mexico | 7 |
+| Morocco | 5 |
+| Mozambique | 6 |
+| Myanmar | 1 |
+| Namibia | 4 |
+| Netherlands | 2 |
+| New Caledonia | 1 |
+| New Zealand | 1 |
+| Niger | 1 |
+| Nigeria | 8 |
+| North Korea | 3 |
+| Northern Cyprus | 2 |
+| Northern Ireland | 1 |
+| Oman | 3 |
+| Padania | 6 |
+| Panama | 5 |
+| Panjab | 1 |
+| Paraguay | 6 |
+| Peru | 2 |
+| Poland | 2 |
+| Portugal | 3 |
+| Puerto Rico | 1 |
+| Qatar | 4 |
+| Raetia | 1 |
+| Republic of Ireland | 1 |
+| Romania | 1 |
+| Russia | 2 |
+| Rwanda | 2 |
+| Saint Kitts and Nevis | 2 |
+| Saint Lucia | 1 |
+| Saudi Arabia | 5 |
+| Scotland | 2 |
+| Senegal | 9 |
+| Serbia | 1 |
+| Seychelles | 2 |
+| Sierra Leone | 2 |
+| Singapore | 1 |
+| Slovakia | 2 |
+| Slovenia | 1 |
+| Solomon Islands | 1 |
+| South Africa | 11 |
+| South Korea | 13 |
+| South Ossetia | 2 |
+| Spain | 7 |
+| Sri Lanka | 1 |
+| Sudan | 1 |
+| Suriname | 2 |
+| Sweden | 4 |
+| Switzerland | 2 |
+| Syria | 4 |
+| Sápmi | 1 |
+| Taiwan | 1 |
+| Tajikistan | 1 |
+| Tanzania | 4 |
+| Thailand | 10 |
+| Togo | 3 |
+| Trinidad and Tobago | 2 |
+| Tunisia | 6 |
+| Turkey | 1 |
+| Uganda | 7 |
+| Ukraine | 3 |
+| United Arab Emirates | 4 |
+| United Koreans in Japan | 2 |
+| United States | 5 |
+| Uruguay | 7 |
+| Vietnam | 2 |
+| Vietnam Republic | 1 |
+| Western Armenia | 2 |
+| Western Isles | 1 |
+| Ynys Môn | 1 |
+| Zambia | 13 |
+| Zanzibar | 2 |
+| Zimbabwe | 7 |
+| Åland | 1 |
+| Åland Islands | 2 |
+
+*Notes:* the default binary collation sorts accented names (`Kárpátalja`, `Åland`) out of order. In production I'd use a locale-aware collation. `Åland` and `Åland Islands` are the same team under two names (data quality issue).
+
+---
+
+## 3. A reliable key to join goalscorers, results and shootouts
+
+```sql
+
+
+-- 3a. Persist the key as a real, indexed column on each table, so joins
+ALTER TABLE results     ADD COLUMN match_key TEXT;
+ALTER TABLE goalscorers ADD COLUMN match_key TEXT;
+ALTER TABLE shootouts   ADD COLUMN match_key TEXT;
+
+UPDATE results     SET match_key = LOWER(TRIM(date)) || '|' || LOWER(TRIM(home_team)) || '|' || LOWER(TRIM(away_team));
+UPDATE goalscorers SET match_key = LOWER(TRIM(date)) || '|' || LOWER(TRIM(home_team)) || '|' || LOWER(TRIM(away_team));
+UPDATE shootouts   SET match_key = LOWER(TRIM(date)) || '|' || LOWER(TRIM(home_team)) || '|' || LOWER(TRIM(away_team));
+
+CREATE INDEX IF NOT EXISTS ix_results_key     ON results(match_key);
+CREATE INDEX IF NOT EXISTS ix_goalscorers_key ON goalscorers(match_key);
+CREATE UNIQUE INDEX IF NOT EXISTS ix_shootouts_key ON shootouts(match_key);
+
+-- 3b. Uniqueness check on results (should return only the 2 known dupes)
+SELECT match_key, COUNT(*) AS n
+FROM results
+GROUP BY match_key
+HAVING COUNT(*) > 1;
+
+-- 3c. Example: all three joined together on the key
+SELECT r.match_key,
+       r.date, r.home_team, r.away_team, r.home_score, r.away_score, r.tournament,
+       s.winner        AS shootout_winner,
+       g.team          AS scoring_team,
+       g.scorer, g.minute, g.own_goal, g.penalty
+FROM results r
+LEFT JOIN shootouts   s ON s.match_key = r.match_key
+LEFT JOIN goalscorers g ON g.match_key = r.match_key;
+
+-- 3d. Orphan check: shootouts with no matching result
+SELECT s.*
+FROM shootouts s
+LEFT JOIN results r ON r.match_key = s.match_key
+WHERE r.match_key IS NULL;
+```
+
+**Why this key:**
+- **Deterministic:** the same match gets the same key in every file and on every reload. An auto-increment ID depends on load order.
+- **Normalised:** `TRIM` and `LOWER` stop whitespace or case differences from breaking joins.
+- **Indexed:** I stored it as a column with indexes (unique on `shootouts`). The first version computed it in views and was too slow to join.
+
+**Validation:**
+
+| Check | Result |
+|---|---|
+| goalscorers → results | 43,189 / 43,189 matched (100%) |
+| shootouts → results | 561 / 562 matched |
+| Duplicate keys in shootouts | 0 |
+| Duplicate keys in results | 2 (see below) |
+
+**Issues found:**
+- `results` has 2 fixtures listed twice with different scores: 1974-02-17 Tahiti v New Caledonia (2-1 and 1-2), and 1977-10-22 Guyana v Barbados (2-0 in Linden, 0-0 in Georgetown). No goal or shootout rows reference them, so the joins aren't affected. In production I'd add a sequence number or deduplicate at source.
+- 1 orphan shootout: 2011-06-29 Saare County v Åland Islands (Island Games). No result exists for that date. The closest match is 2011-06-26 Åland Islands 3-3 Saare County, which has the teams swapped and a different date.
+- Team names change over time (`Åland` vs `Åland Islands`). A team-name mapping table would make the key more robust.
+- SQLite's `LOWER` only lowercases ASCII letters. It still applies the same way in every table, so the key stays consistent.
+
+---
+
+## 4. Teams that won a penalty shootout after a 1-1 draw
+
+```sql
+-- 4. Teams that won a penalty shootout after a 1-1 draw
+
+-- 4a. Every match: which team won the shootout after a 1-1
+SELECT r.date, r.home_team, r.away_team, r.home_score, r.away_score,
+       r.tournament, s.winner AS shootout_winner
+FROM shootouts s
+JOIN results  r ON r.match_key = s.match_key
+WHERE CAST(r.home_score AS INTEGER) = 1
+  AND CAST(r.away_score AS INTEGER) = 1
+ORDER BY r.date;
+
+-- 4b. Distinct list of teams, with how many times each did it
+SELECT s.winner AS team,
+       COUNT(*) AS shootout_wins_after_1_1
+FROM shootouts s
+JOIN results  r ON r.match_key = s.match_key
+WHERE CAST(r.home_score AS INTEGER) = 1
+  AND CAST(r.away_score AS INTEGER) = 1
+GROUP BY s.winner
+ORDER BY shootout_wins_after_1_1 DESC, team;
+```
+
+**Result:** 225 shootouts followed a 1-1 draw, won by **115 different teams**. South Korea and Uruguay did it most often (7 each).
+
+| Team | Shootout wins after 1-1 |
+|---|---|
+| South Korea | 7 |
+| Uruguay | 7 |
+| Argentina | 6 |
+| Burkina Faso | 6 |
+| Iran | 5 |
+| Mali | 5 |
+| Croatia | 4 |
+| Germany | 4 |
+| Iraq | 4 |
+| Italy | 4 |
+| Kenya | 4 |
+| Mexico | 4 |
+| Panama | 4 |
+| South Africa | 4 |
+| Tunisia | 4 |
+| Zimbabwe | 4 |
+| Brazil | 3 |
+| China PR | 3 |
+| Colombia | 3 |
+| Eswatini | 3 |
+| Ethiopia | 3 |
+| Ivory Coast | 3 |
+| Latvia | 3 |
+| Martinique | 3 |
+| Namibia | 3 |
+| Nigeria | 3 |
+| Spain | 3 |
+| Sweden | 3 |
+| Uganda | 3 |
+| United Arab Emirates | 3 |
+| Algeria | 2 |
+| Angola | 2 |
+| Benin | 2 |
+| Botswana | 2 |
+| Costa Rica | 2 |
+| Cyprus | 2 |
+| Egypt | 2 |
+| Ellan Vannin | 2 |
+| Ghana | 2 |
+| Guinea | 2 |
+| Honduras | 2 |
+| Japan | 2 |
+| Kuwait | 2 |
+| Malawi | 2 |
+| Malaysia | 2 |
+| Oman | 2 |
+| Padania | 2 |
+| Qatar | 2 |
+| Russia | 2 |
+| Saint Kitts and Nevis | 2 |
+| Trinidad and Tobago | 2 |
+| United Koreans in Japan | 2 |
+| Abkhazia | 1 |
+| Antigua and Barbuda | 1 |
+| Bahrain | 1 |
+| Bangladesh | 1 |
+| Barbados | 1 |
+| Basque Country | 1 |
+| Belarus | 1 |
+| Belgium | 1 |
+| Bulgaria | 1 |
+| Canada | 1 |
+| Chad | 1 |
+| Chile | 1 |
+| Cuba | 1 |
+| Czechoslovakia | 1 |
+| DR Congo | 1 |
+| Denmark | 1 |
+| England | 1 |
+| Fiji | 1 |
+| France | 1 |
+| Gambia | 1 |
+| Greenland | 1 |
+| Guadeloupe | 1 |
+| Guatemala | 1 |
+| Guyana | 1 |
+| Iceland | 1 |
+| India | 1 |
+| Lesotho | 1 |
+| Mauritius | 1 |
+| Morocco | 1 |
+| Mozambique | 1 |
+| New Caledonia | 1 |
+| North Korea | 1 |
+| Northern Cyprus | 1 |
+| Northern Ireland | 1 |
+| Paraguay | 1 |
+| Poland | 1 |
+| Portugal | 1 |
+| Romania | 1 |
+| Rwanda | 1 |
+| Saudi Arabia | 1 |
+| Scotland | 1 |
+| Senegal | 1 |
+| Serbia | 1 |
+| Seychelles | 1 |
+| Singapore | 1 |
+| Slovakia | 1 |
+| Sri Lanka | 1 |
+| Sudan | 1 |
+| Switzerland | 1 |
+| Syria | 1 |
+| Taiwan | 1 |
+| Tanzania | 1 |
+| Thailand | 1 |
+| Togo | 1 |
+| Turkey | 1 |
+| Ukraine | 1 |
+| Vietnam | 1 |
+| Vietnam Republic | 1 |
+| Western Armenia | 1 |
+| Western Isles | 1 |
+| Zambia | 1 |
+| Zanzibar | 1 |
+| Åland | 1 |
+
+*Note:* `results` stores the score at the end of play, so a 1-1 means the match was level after extra time where extra time was played.
